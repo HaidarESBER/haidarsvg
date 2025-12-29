@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>HaidarApp - AI-Powered Vector Graphics Converter</title>
+        <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+        
+        /* Header */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .app-header h1 {
+            margin: 0;
+            font-size: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+        
+        .app-header .subtitle {
+            font-size: 12px;
+            color: #666;
+            margin-left: 10px;
+        }
+        
+        /* Main Container */
+        .main-container {
+            display: flex;
+            padding-top: 80px;
+            min-height: 100vh;
+            gap: 20px;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-bottom: 20px;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            min-width: 320px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 25px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            position: sticky;
+            top: 100px;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+        
+        /* Section Cards */
+        .section-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea 0%, transparent 100%);
+            margin-left: 10px;
+        }
+        
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #333;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        /* Retouch Controls */
+        .retouch-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 15px;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+            animation: slideDown 0.4s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .retouch-panel label {
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        .retouch-panel input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .retouch-panel input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffc107;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .retouch-panel input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffc107;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .retouch-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .retouch-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .retouch-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .retouch-btn.active {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+        
+        /* Drop Zone */
+        #drop {
+            flex: 1;
+            min-height: calc(100vh - 100px);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 30px;
+            position: relative;
+        }
+        
+        #droptext {
+            height: 100%;
+            min-height: 500px;
+            border: 3px dashed rgba(102, 126, 234, 0.3);
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.02) 0%, rgba(118, 75, 162, 0.02) 100%);
+        }
+        
+        #droptext.hovering {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            transform: scale(1.02);
+        }
+        
+        #droptext p {
+            font-size: 22px;
+            color: #333;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        
+        #droptext a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 700;
+            border-bottom: 2px solid #667eea;
+            transition: all 0.3s;
+        }
+        
+        #droptext a:hover {
+            color: #764ba2;
+            border-bottom-color: #764ba2;
+        }
+        
+        /* Preview Container */
+        #preview-container {
+            display: none;
+            gap: 20px;
+            height: 100%;
+        }
+        
+        #preview-container.active {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .preview-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: auto;
+            max-height: calc(100vh - 140px);
+        }
+        
+        .preview-panel h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        #canvas-container {
+            position: relative;
+            width: 100%;
+            text-align: center;
+        }
+        
+        #canvas-container canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        #svg {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: transparent !important;
+        }
+        
+        /* Bulk Results Gallery */
+        #bulk-results-gallery {
+            display: none;
+            margin-top: 20px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        
+        #bulk-results-gallery.active {
+            display: block;
+        }
+        
+        .bulk-result-item {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .bulk-result-item:hover {
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .bulk-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .bulk-result-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .bulk-result-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .bulk-action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .bulk-action-btn.edit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .bulk-action-btn.download {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+            color: white;
+        }
+        
+        .bulk-action-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .bulk-result-previews {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .bulk-preview-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .bulk-preview-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .bulk-preview-image {
+            width: 100%;
+            height: auto;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 6px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .bulk-preview-svg {
+            width: 100%;
+            height: auto;
+            max-height: 150px;
+            border-radius: 6px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Settings Panel */
+        .settings-panel {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid rgba(102, 126, 234, 0.2);
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .settings-group {
+            margin-bottom: 20px;
+        }
+        
+        .settings-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        
+        .settings-group .hint {
+            font-size: 11px;
+            color: #999;
+            font-weight: normal;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .button {
+            flex: 1;
+            padding: 10px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            transition: all 0.3s ease;
+        }
+        
+        .button:hover {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .button.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .slider-container {
+            margin-top: 10px;
+        }
+        
+        .value-display {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+            text-align: center;
+            margin: 8px 0;
+            padding: 8px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Progress Bar */
+        #progressregion {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            z-index: 999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        #progressbar {
+            width: 100%;
+            height: 8px;
+            border-radius: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        #progressbar::-webkit-progress-bar {
+            background-color: #e0e0e0;
+            border-radius: 10px;
+        }
+        
+        #progressbar::-webkit-progress-value {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        
+        #progressbar::-moz-progress-bar {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                max-height: none;
+            }
+            
+            #preview-container.active {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Utility Classes */
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .slide-down {
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Link buttons */
+        a.button {
+            text-decoration: none;
+            display: block;
+        }
+        
+        /* Brush size display */
+        #brush-size-value {
+            color: #ffc107;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        /* Info text */
+        .info-text {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            margin-top: 12px;
+            font-style: italic;
+        }
+        </style>
+    </head>
+
+    <body>
+        <div class="app-header">
+            <div>
+                <h1>🎨 HaidarApp</h1>
+                <span class="subtitle">AI-Powered Vector Graphics Converter</span>
+            </div>
+        </div>
+        
+        <div id="progressregion" style="display: none;">
+            <progress id="progressbar" value="0" max="100"></progress>
+        </div>
+        
+        <div class="main-container">
+            <div class="sidebar">
+                <!-- Background Removal Section -->
+                <div class="section-card">
+                    <h3 class="section-title">🎨 Background Removal</h3>
+                    <button id="remove-bg-btn" class="btn btn-success" type="button">
+                        <span>🎨</span>
+                        <span>Remove Background</span>
+                    </button>
+                    
+                    <div id="after-bg-removed" style="display: block;">
+                        <h4 style="margin: 20px 0 12px 0; font-size: 15px; color: #555; font-weight: 600;">✏️ Manual Retouch</h4>
+                        <button id="retouch-btn" class="btn btn-warning" type="button" onclick="window.handleRetouchClick && window.handleRetouchClick(event)">
+                            <span>✏️</span>
+                            <span>Start Retouching</span>
+                        </button>
+                        
+                        <div id="retouch-controls" class="retouch-panel" style="display: none;">
+                            <label>
+                                🖌️ Brush Size: <span id="brush-size-value" style="color: #ffc107; font-weight: 700; font-size: 18px;">20</span>px
+                            </label>
+                            <input type="range" id="brush-size" min="5" max="100" value="20">
+                            
+                            <div class="retouch-buttons">
+                                <button id="retouch-remove" class="retouch-btn" type="button" style="background: #dc3545; color: white;">
+                                    🗑️ Remove
+                                </button>
+                                <button id="retouch-restore" class="retouch-btn" type="button" style="background: #28a745; color: white;">
+                                    ↩️ Restore
+                                </button>
+                            </div>
+                            
+                            <button id="retouch-done" class="btn btn-secondary" type="button" style="margin-top: 10px;">
+                                <span>✅</span>
+                                <span>Done Retouching</span>
+                            </button>
+                            
+                            <p class="info-text">💡 Click and drag on the image to paint</p>
+                        </div>
+                        
+                        <a id="download-nobg" class="btn btn-danger" style="text-decoration: none; margin-top: 15px;">
+                            <span>💾</span>
+                            <span>Download No-BG Image</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Vectorization Section -->
+                <div class="section-card">
+                    <h3 class="section-title">🔄 Vectorization</h3>
+                    <button id="convert-btn" class="btn btn-primary" type="button">
+                        <span>🔄</span>
+                        <span>Convert to SVG</span>
+                    </button>
+                    
+                    <a id="export" class="btn btn-info" style="text-decoration: none; opacity: 0.5; pointer-events: none;">
+                        <span>📥</span>
+                        <span>Download as SVG</span>
+                    </a>
+                    
+                    <a id="export-png" class="btn btn-info" style="text-decoration: none; opacity: 0.5; pointer-events: none;">
+                        <span>🖼️</span>
+                        <span>Download as PNG</span>
+                    </a>
+                    
+                    <button id="settings-btn" class="btn btn-secondary" type="button" style="margin-top: 15px;">
+                        <span>⚙️</span>
+                        <span>Vectorization Settings</span>
+                    </button>
+                </div>
+                
+                <!-- Bulk Processing Section -->
+                <div class="section-card">
+                    <h3 class="section-title">📦 Bulk Processing</h3>
+                    <input type="file" id="bulkInput" accept="image/*" multiple style="display: none;">
+                    <button id="bulk-select-btn" class="btn btn-primary" type="button">
+                        <span>📁</span>
+                        <span>Select Multiple Images</span>
+                    </button>
+                    
+                    <div id="bulk-processing-panel" style="display: none; margin-top: 15px;">
+                        <div style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="font-size: 13px; color: #555; font-weight: 600;">Selected: <span id="bulk-count">0</span> images</span>
+                                <button id="bulk-clear-btn" class="button" type="button" style="padding: 6px 12px; font-size: 12px;">Clear</button>
+                            </div>
+                            <div id="bulk-file-list" style="max-height: 150px; overflow-y: auto; background: #f8f9fa; border-radius: 8px; padding: 10px; font-size: 12px;">
+                                <!-- File list will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <button id="bulk-process-btn" class="btn btn-success" type="button" style="width: 100%;">
+                            <span>🚀</span>
+                            <span>Process All Images</span>
+                        </button>
+                        
+                        <div id="bulk-progress" style="display: none; margin-top: 15px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="font-size: 12px; color: #555;">Progress</span>
+                                <span id="bulk-progress-text" style="font-size: 12px; color: #667eea; font-weight: 600;">0 / 0</span>
+                            </div>
+                            <div style="width: 100%; height: 8px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
+                                <div id="bulk-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.3s ease;"></div>
+                            </div>
+                            <div id="bulk-status" style="margin-top: 10px; font-size: 12px; color: #666; text-align: center;"></div>
+                        </div>
+                        
+                        <button id="bulk-download-btn" class="btn btn-info" type="button" style="width: 100%; margin-top: 15px; display: none;">
+                            <span>💾</span>
+                            <span>Download All Results (ZIP)</span>
+                        </button>
+                        
+                        <!-- Results Gallery -->
+                        <div id="bulk-results-gallery" style="margin-top: 20px;">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings Panel -->
+                <div id="settings-panel" class="settings-panel" style="display: none;">
+                    <div class="settings-group">
+                        <label>Clustering Algorithm</label>
+                        <div class="button-group">
+                            <button class="button" id="clustering-binary" title="Black & White (Binary Image)">B/W</button>
+                            <button class="button selected" id="clustering-color" title="True Color Image">Color</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-group clustering-color-options">
+                        <label>Hierarchical Mode</label>
+                        <div class="button-group">
+                            <button class="button selected" id="clustering-stacked" title="Stack shapes on top of another">Stacked</button>
+                            <button class="button" id="clustering-cutout" title="Shapes disjoint with others">Cutout</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <label>Filter Speckle <span class="hint">(Cleaner)</span></label>
+                        <div class="value-display" id="filterspecklevalue">4</div>
+                        <div class="slider-container">
+                            <input id="filterspeckle" type="range" min="1" max="16" step="1" value="4">
+                        </div>
+                    </div>
+
+                    <div class="settings-group clustering-color-options">
+                        <label>Color Precision <span class="hint">(More accurate)</span></label>
+                        <div class="value-display" id="colorprecisionvalue">6</div>
+                        <div class="slider-container">
+                            <input id="colorprecision" type="range" min="1" max="8" step="1" value="6">
+                        </div>
+                    </div>
+
+                    <div class="settings-group clustering-color-options">
+                        <label>Gradient Step <span class="hint">(Less layers)</span></label>
+                        <div class="value-display" id="layerdifferencevalue">16</div>
+                        <div class="slider-container">
+                            <input id="layerdifference" type="range" min="0" max="255" step="1" value="16">
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <label>Curve Fitting</label>
+                        <div class="button-group">
+                            <button class="button" id="none" title="Exact cluster boundary">Pixel</button>
+                            <button class="button" id="polygon" title="Simplify to Polygon">Polygon</button>
+                            <button class="button selected" id="spline" title="Smooth and Curve-fit">Spline</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-group spline-options">
+                        <label>Corner Threshold <span class="hint">(Smoother)</span></label>
+                        <div class="value-display" id="cornervalue">60</div>
+                        <div class="slider-container">
+                            <input id="corner" type="range" min="0" max="180" step="1" value="60">
+                        </div>
+                    </div>
+
+                    <div class="settings-group spline-options">
+                        <label>Segment Length <span class="hint">(More coarse)</span></label>
+                        <div class="value-display" id="lengthvalue">4</div>
+                        <div class="slider-container">
+                            <input id="length" type="range" min="3.5" max="10" step="0.5" value="4">
+                        </div>
+                    </div>
+
+                    <div class="settings-group spline-options">
+                        <label>Splice Threshold <span class="hint">(More accurate)</span></label>
+                        <div class="value-display" id="splicevalue">45</div>
+                        <div class="slider-container">
+                            <input id="splice" type="range" min="0" max="180" step="1" value="45">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group spline-options" style="display: none;">
+                        <label>Path Precision <span class="hint">(More digits)</span></label>
+                        <div class="value-display" id="pathprecisionvalue">8</div>
+                        <div class="slider-container">
+                            <input id="pathprecision" type="range" min="0" max="16" step="1" value="8">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content Area -->
+            <div id="drop" style="flex: 1;">
+                <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                
+                <div id="droptext">
+                    <div style="font-size: 64px; margin-bottom: 20px;">🎨</div>
+                    <p>Drag an image here or <a href="#" id="imageSelect">Select file</a></p>
+                    <p style="font-size: 16px; color: #666; margin-top: 10px;">Supports PNG, JPG, WEBP and more</p>
+                </div>
+                
+                <div id="preview-container">
+                    <div class="preview-panel" id="preview-original">
+                        <h3>📷 Original Image</h3>
+                        <div id="canvas-container">
+                            <canvas id="frame"></canvas>
+                        </div>
+                    </div>
+                    <div class="preview-panel" id="preview-result">
+                        <h3>✨ Vector Result (SVG)</h3>
+                        <svg id="svg" version="1.1" xmlns="http://www.w3.org/2000/svg"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script src="./bootstrap.js"></script>
+    </body>
+</html>

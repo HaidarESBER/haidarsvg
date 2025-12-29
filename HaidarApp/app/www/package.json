@@ -1,0 +1,29 @@
+{
+  "name": "haidar-app",
+  "version": "0.1.0",
+  "description": "HaidarApp - Vector Graphics Converter with Drag and Drop",
+  "author": "Haidar",
+  "license": "MIT",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "webpack-dev-server",
+    "build": "webpack"
+  },
+  "keywords": [
+    "rust",
+    "wasm",
+    "vectorization",
+    "svg"
+  ],
+  "dependencies": {
+    "@imgly/background-removal": "^1.2.0",
+    "haidar_app": "file:./pkg",
+    "jszip": "^3.10.1",
+    "webpack": "^5.88.0"
+  },
+  "devDependencies": {
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  }
+}

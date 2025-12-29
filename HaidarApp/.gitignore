@@ -1,0 +1,9 @@
+target/
+**/*.rs.bk
+Cargo.lock
+app/www/pkg/
+app/www/node_modules/
+app/www/dist/
+*.log
+
+

@@ -1,0 +1,42 @@
+[package]
+name = "haidar_app"
+version = "0.1.0"
+authors = ["Haidar"]
+edition = "2021"
+description = "HaidarApp - Raster to Vector Graphics Converter with Drag and Drop"
+license = "MIT OR Apache-2.0"
+categories = ["graphics"]
+keywords = ["svg", "computer-graphics", "vectorization"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = ["console_error_panic_hook"]
+
+[dependencies]
+cfg-if = "0.1"
+console_log = { version = "0.2", features = ["color"] }
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+visioncortex = "0.8.1"
+
+# The `console_error_panic_hook` crate provides better debugging of panics by
+# logging them with `console.error`. This is great for development, but requires
+# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
+# code size when deploying.
+console_error_panic_hook = { version = "0.1", optional = true }
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  "CanvasRenderingContext2d",
+  "console",
+  "Document",
+  "HtmlElement",
+  "HtmlCanvasElement",
+  "ImageData",
+  "Window",
+]
+

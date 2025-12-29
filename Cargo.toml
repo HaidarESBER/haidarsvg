@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "cmdapp",
+    "webapp",
+]
+resolver = "2"
