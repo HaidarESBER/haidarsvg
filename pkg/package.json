@@ -1,0 +1,25 @@
+{
+  "name": "haidar_app",
+  "type": "module",
+  "collaborators": [
+    "Haidar"
+  ],
+  "description": "HaidarApp - Raster to Vector Graphics Converter with Drag and Drop",
+  "version": "0.1.0",
+  "license": "MIT OR Apache-2.0",
+  "files": [
+    "haidar_app_bg.wasm",
+    "haidar_app.js",
+    "haidar_app.d.ts"
+  ],
+  "main": "haidar_app.js",
+  "types": "haidar_app.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ],
+  "keywords": [
+    "svg",
+    "computer-graphics",
+    "vectorization"
+  ]
+}
