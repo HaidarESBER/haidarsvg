@@ -726,6 +726,10 @@
                 <h1>🎨 HaidarApp</h1>
                 <span class="subtitle">AI-Powered Vector Graphics Converter</span>
             </div>
+            <a href="bulk.html" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 15px; transition: all 0.3s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                <span>🚀</span>
+                <span>Bulk Processing</span>
+            </a>
         </div>
         
         <div id="progressregion" style="display: none;">
@@ -737,11 +741,12 @@
                 <!-- Background Removal Section -->
                 <div class="section-card">
                     <h3 class="section-title">🎨 Background Removal</h3>
+                    <p class="info-text" style="margin-bottom: 12px;">✨ AI-powered removal with invisible residue cleanup</p>
                     <button id="remove-bg-btn" class="btn btn-success" type="button">
                         <span>🎨</span>
                         <span>Remove Background</span>
                     </button>
-                    
+
                     <div id="after-bg-removed" style="display: block;">
                         <h4 style="margin: 20px 0 12px 0; font-size: 15px; color: #555; font-weight: 600;">✏️ Manual Retouch</h4>
                         <button id="retouch-btn" class="btn btn-warning" type="button" onclick="window.handleRetouchClick && window.handleRetouchClick(event)">
@@ -778,7 +783,31 @@
                         </a>
                     </div>
                 </div>
-                
+
+                <!-- Image Enhancement Section -->
+                <div class="section-card">
+                    <h3 class="section-title">✨ Image Enhancement</h3>
+                    <p class="info-text" style="margin-bottom: 15px;">Enhance quality before vectorization (recommended for text & details)</p>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #555;">Upscale Factor</label>
+                        <div class="button-group">
+                            <button class="button selected" id="upscale-2x" title="2x Resolution">2x</button>
+                            <button class="button" id="upscale-4x" title="4x Resolution">4x</button>
+                        </div>
+                    </div>
+
+                    <button id="upscale-btn" class="btn btn-success" type="button">
+                        <span>🔍</span>
+                        <span>Upscale Image</span>
+                    </button>
+
+                    <div id="upscale-info" style="display: none; margin-top: 15px; padding: 12px; background: #e3f2fd; border-radius: 8px; font-size: 13px;">
+                        <strong style="color: #1976d2;">✅ Upscaled!</strong>
+                        <div id="upscale-details" style="color: #555; margin-top: 5px;"></div>
+                    </div>
+                </div>
+
                 <!-- Vectorization Section -->
                 <div class="section-card">
                     <h3 class="section-title">🔄 Vectorization</h3>
@@ -879,17 +908,17 @@
 
                     <div class="settings-group clustering-color-options">
                         <label>Color Precision <span class="hint">(More accurate)</span></label>
-                        <div class="value-display" id="colorprecisionvalue">6</div>
+                        <div class="value-display" id="colorprecisionvalue">8</div>
                         <div class="slider-container">
-                            <input id="colorprecision" type="range" min="1" max="8" step="1" value="6">
+                            <input id="colorprecision" type="range" min="1" max="8" step="1" value="8">
                         </div>
                     </div>
 
                     <div class="settings-group clustering-color-options">
                         <label>Gradient Step <span class="hint">(Less layers)</span></label>
-                        <div class="value-display" id="layerdifferencevalue">16</div>
+                        <div class="value-display" id="layerdifferencevalue">8</div>
                         <div class="slider-container">
-                            <input id="layerdifference" type="range" min="0" max="255" step="1" value="16">
+                            <input id="layerdifference" type="range" min="0" max="255" step="1" value="8">
                         </div>
                     </div>
 
@@ -904,9 +933,9 @@
 
                     <div class="settings-group spline-options">
                         <label>Corner Threshold <span class="hint">(Smoother)</span></label>
-                        <div class="value-display" id="cornervalue">60</div>
+                        <div class="value-display" id="cornervalue">180</div>
                         <div class="slider-container">
-                            <input id="corner" type="range" min="0" max="180" step="1" value="60">
+                            <input id="corner" type="range" min="0" max="180" step="1" value="180">
                         </div>
                     </div>
 
@@ -961,6 +990,6 @@
             </div>
         </div>
         
-        <script src="./bootstrap.js"></script>
+        <script src="./main.bundle.js"></script>
     </body>
 </html>

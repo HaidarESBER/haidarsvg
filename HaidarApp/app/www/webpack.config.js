@@ -1,10 +1,13 @@
 const path = require('path');
 
 module.exports = {
-  entry: "./bootstrap.js",
+  entry: {
+    main: "./bootstrap.js",
+    bulk: "./bulk.js"
+  },
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "bootstrap.js",
+    filename: "[name].bundle.js",
     publicPath: '/'
   },
   mode: "development",

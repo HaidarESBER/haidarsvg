@@ -18,8 +18,8 @@ fn path_simplify_mode_from_str(s: &str) -> PathSimplifyMode {
 }
 
 pub fn config_from_args() -> (PathBuf, PathBuf, Config) {
-    let app = App::new("visioncortex VTracer ".to_owned() + env!("CARGO_PKG_VERSION"))
-        .about("A cmd app to convert images into vector graphics.");
+    let app = App::new("Haidar Vectorizer (based on VTracer) ".to_owned() + env!("CARGO_PKG_VERSION"))
+        .about("Raster-to-vector (SVG) converter. Personalised build by Haidar Esber (Lebanese software developer living in France).");
 
     let app = app.arg(
         Arg::with_name("input")

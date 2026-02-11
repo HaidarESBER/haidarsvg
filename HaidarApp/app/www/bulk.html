@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Processing - HaidarApp</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: #667eea;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 10px;
+            background: rgba(102, 126, 234, 0.1);
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .drop-zone {
+            border: 3px dashed #667eea;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            background: rgba(102, 126, 234, 0.05);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #764ba2;
+        }
+
+        .drop-zone h2 {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .drop-zone p {
+            color: #666;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .pipeline-info {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .pipeline-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .step {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1976d2;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .arrow {
+            color: #1976d2;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .files-list {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .file-item {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .file-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .file-status {
+            font-size: 14px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .status-pending { background: #e0e0e0; color: #666; }
+        .status-processing { background: #fff3cd; color: #856404; }
+        .status-complete { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            text-align: center;
+            display: none;
+        }
+
+        .summary h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .summary p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Bulk Processing Pipeline</h1>
+            <a href="index.html" class="back-link">← Back to Main</a>
+        </div>
+
+        <div class="main-card">
+            <div class="pipeline-info">
+                <h3 style="margin-bottom: 15px; color: #1976d2;">Automated Processing Pipeline:</h3>
+                <div class="pipeline-steps">
+                    <div class="step">📤 Upload</div>
+                    <span class="arrow">→</span>
+                    <div class="step">🔍 Upscale 2x</div>
+                    <span class="arrow">→</span>
+                    <div class="step">🎨 Remove BG</div>
+                    <span class="arrow">→</span>
+                    <div class="step">🔄 Vectorize</div>
+                    <span class="arrow">→</span>
+                    <div class="step">📸 SVG to JPEG</div>
+                    <span class="arrow">→</span>
+                    <div class="step">📦 ZIP Download</div>
+                </div>
+            </div>
+
+            <div class="drop-zone" id="dropZone">
+                <h2>📁 Drop Multiple Images Here</h2>
+                <p>or click to select files</p>
+                <p style="font-size: 14px; color: #999; margin-top: 15px;">Supports PNG, JPG, WEBP • Process up to 50 images at once</p>
+                <input type="file" id="fileInput" class="file-input" multiple accept="image/*">
+            </div>
+
+            <div class="files-list" id="filesList"></div>
+
+            <div class="controls" id="controls" style="display: none;">
+                <button class="btn btn-primary" id="processBtn">
+                    <span>⚡</span>
+                    <span>Start Processing</span>
+                </button>
+                <button class="btn btn-danger" id="clearBtn">
+                    <span>🗑️</span>
+                    <span>Clear All</span>
+                </button>
+            </div>
+
+            <div class="summary" id="summary">
+                <h3>✅ Processing Complete!</h3>
+                <p id="summaryText"></p>
+                <button class="btn btn-success" id="downloadBtn" style="margin: 20px auto 0;">
+                    <span>💾</span>
+                    <span>Download ZIP</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="bulk.bundle.js"></script>
+</body>
+</html>

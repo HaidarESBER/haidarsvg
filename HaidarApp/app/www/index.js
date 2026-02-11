@@ -18,10 +18,10 @@ window.bgRemoved = false;
 
 // Default settings for no-background images
 const defaultNoBgSettings = {
-    filter_speckle: 2,
-    color_precision: 7,
-    layer_difference: 12,
-    corner_threshold: 60,
+    filter_speckle: 4,
+    color_precision: 8,
+    layer_difference: 8,
+    corner_threshold: 180,
     length_threshold: 4,
     splice_threshold: 45
 };
@@ -60,9 +60,17 @@ let brushSize = 20;
 // Initialize buttons
 convertBtn.disabled = true;
 const removeBgBtn = document.getElementById('remove-bg-btn');
+const upscaleBtn = document.getElementById('upscale-btn');
+const upscale2xBtn = document.getElementById('upscale-2x');
+const upscale4xBtn = document.getElementById('upscale-4x');
+const upscaleInfo = document.getElementById('upscale-info');
+const upscaleDetails = document.getElementById('upscale-details');
 const settingsBtn = document.getElementById('settings-btn');
 const settingsPanel = document.getElementById('settings-panel');
 removeBgBtn.disabled = true;
+upscaleBtn.disabled = true;
+
+let upscaleFactor = 2; // Default 2x
 
 // Settings panel toggle
 let settingsOpen = false;
@@ -77,6 +85,135 @@ if (settingsBtn && settingsPanel) {
             settingsBtn.innerHTML = settingsOpen ? '<span>⚙️</span><span>Hide Settings</span>' : '<span>⚙️</span><span>Vectorization Settings</span>';
         }
     });
+}
+
+// Upscale factor selection
+if (upscale2xBtn && upscale4xBtn) {
+    upscale2xBtn.addEventListener('click', function() {
+        upscaleFactor = 2;
+        upscale2xBtn.classList.add('selected');
+        upscale4xBtn.classList.remove('selected');
+    });
+
+    upscale4xBtn.addEventListener('click', function() {
+        upscaleFactor = 4;
+        upscale4xBtn.classList.add('selected');
+        upscale2xBtn.classList.remove('selected');
+    });
+}
+
+// AI Upscaling with high-quality interpolation
+async function upscaleImage() {
+    if (!imageLoaded || !img.src) {
+        alert('Please load an image first.');
+        return;
+    }
+
+    upscaleBtn.disabled = true;
+    const btnText = upscaleBtn.querySelector('span:last-child') || upscaleBtn;
+    if (btnText.tagName === 'SPAN') {
+        btnText.textContent = 'Upscaling...';
+    }
+
+    try {
+        const originalWidth = canvas.width;
+        const originalHeight = canvas.height;
+        const newWidth = originalWidth * upscaleFactor;
+        const newHeight = originalHeight * upscaleFactor;
+
+        // Create temporary canvas for upscaling
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = newWidth;
+        tempCanvas.height = newHeight;
+        const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+
+        // Use high-quality smoothing for upscaling
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = 'high';
+
+        // Get current canvas content
+        const currentImageData = ctx.getImageData(0, 0, originalWidth, originalHeight);
+        const tempSourceCanvas = document.createElement('canvas');
+        tempSourceCanvas.width = originalWidth;
+        tempSourceCanvas.height = originalHeight;
+        const tempSourceCtx = tempSourceCanvas.getContext('2d');
+        tempSourceCtx.putImageData(currentImageData, 0, 0);
+
+        // Draw upscaled image
+        tempCtx.drawImage(tempSourceCanvas, 0, 0, originalWidth, originalHeight, 0, 0, newWidth, newHeight);
+
+        // Apply sharpening filter for better text/detail clarity
+        const imageData = tempCtx.getImageData(0, 0, newWidth, newHeight);
+        const sharpened = sharpenImage(imageData);
+        tempCtx.putImageData(sharpened, 0, 0);
+
+        // Resize main canvas and draw upscaled image
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        ctx.clearRect(0, 0, newWidth, newHeight);
+        ctx.drawImage(tempCanvas, 0, 0);
+
+        // Update image source
+        img.src = canvas.toDataURL();
+
+        // Show success message
+        upscaleInfo.style.display = 'block';
+        upscaleDetails.innerHTML = `${originalWidth}×${originalHeight} → ${newWidth}×${newHeight} (${upscaleFactor}x)`;
+
+        if (btnText.tagName === 'SPAN') {
+            btnText.textContent = 'Upscale Image';
+        }
+        upscaleBtn.disabled = false;
+
+        console.log(`✅ Image upscaled from ${originalWidth}×${originalHeight} to ${newWidth}×${newHeight}`);
+
+    } catch (error) {
+        console.error('Error upscaling image:', error);
+        alert('Error upscaling image: ' + error.message);
+        if (btnText.tagName === 'SPAN') {
+            btnText.textContent = 'Upscale Image';
+        }
+        upscaleBtn.disabled = false;
+    }
+}
+
+// Sharpen filter for better detail preservation
+function sharpenImage(imageData) {
+    const pixels = imageData.data;
+    const width = imageData.width;
+    const height = imageData.height;
+    const output = new Uint8ClampedArray(pixels);
+
+    // Sharpening kernel
+    const kernel = [
+        0, -1,  0,
+       -1,  5, -1,
+        0, -1,  0
+    ];
+
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            for (let c = 0; c < 3; c++) { // RGB only, skip alpha
+                let sum = 0;
+                for (let ky = -1; ky <= 1; ky++) {
+                    for (let kx = -1; kx <= 1; kx++) {
+                        const idx = ((y + ky) * width + (x + kx)) * 4 + c;
+                        const kernelIdx = (ky + 1) * 3 + (kx + 1);
+                        sum += pixels[idx] * kernel[kernelIdx];
+                    }
+                }
+                const idx = (y * width + x) * 4 + c;
+                output[idx] = Math.max(0, Math.min(255, sum));
+            }
+        }
+    }
+
+    return new ImageData(output, width, height);
+}
+
+// Upscale button click handler
+if (upscaleBtn) {
+    upscaleBtn.addEventListener('click', upscaleImage);
 }
 
 // Background removal using @imgly/background-removal
@@ -105,7 +242,7 @@ async function removeBackground() {
             removeBgBtn.innerHTML = '<span>⏳</span><span>Removing background (rembg model)...</span>';
         }
         console.log('Processing with @imgly/background-removal (U2-Net - same as rembg Python)...');
-        
+
         // Use U2-Net model (same as rembg Python)
         const resultBlob = await rembgRemove(blob, {
             model: 'isnet_fp16', // High quality model (same as rembg)
@@ -136,7 +273,7 @@ async function removeBackground() {
             const data = imageData.data;
             const width = canvas.width;
             const height = canvas.height;
-            
+
             // Step 1: Dilate the foreground mask to preserve edges (expand opaque areas)
             // This helps recover pixels that were incorrectly removed
             const dilatedData = new Uint8ClampedArray(data);
@@ -161,7 +298,7 @@ async function removeBackground() {
                                 }
                             }
                         }
-                        
+
                         // If we found a more opaque neighbor, preserve this pixel more
                         if (maxNeighborAlpha > alpha && alpha > 50) {
                             dilatedData[idx + 3] = Math.min(255, alpha + (maxNeighborAlpha - alpha) * 0.3);
@@ -193,23 +330,31 @@ async function removeBackground() {
                 }
             }
             
-            // Step 3: Boost semi-transparent pixels that are likely part of the subject
-            // This helps recover fine details like hair, fur, or transparent objects
-            for (let i = 0; i < dilatedData.length; i += 4) {
-                const alpha = dilatedData[i + 3];
-                // If pixel has some opacity and color, boost it slightly
-                if (alpha > 30 && alpha < 200) {
-                    const r = dilatedData[i];
-                    const g = dilatedData[i + 1];
-                    const b = dilatedData[i + 2];
+            // Step 3: Remove invisible residue that vectorization picks up
+            // Pixels with very low alpha are invisible but get vectorized as shapes
+            const cleanedData = new Uint8ClampedArray(dilatedData);
+            const alphaThreshold = 20; // Remove pixels below this alpha value
+
+            for (let i = 0; i < cleanedData.length; i += 4) {
+                const alpha = cleanedData[i + 3];
+
+                // Remove invisible residue
+                if (alpha < alphaThreshold) {
+                    cleanedData[i + 3] = 0; // Make fully transparent
+                }
+                // Boost visible pixels
+                else if (alpha > 30 && alpha < 200) {
+                    const r = cleanedData[i];
+                    const g = cleanedData[i + 1];
+                    const b = cleanedData[i + 2];
                     // If pixel has significant color, it's likely part of the subject
                     if (r + g + b > 50) {
-                        dilatedData[i + 3] = Math.min(255, alpha * 1.15);
+                        cleanedData[i + 3] = Math.min(255, alpha * 1.15);
                     }
                 }
             }
             
-            ctx.putImageData(new ImageData(dilatedData, width, height), 0, 0);
+            ctx.putImageData(new ImageData(cleanedData, width, height), 0, 0);
             
             // Save original image data for retouching
             originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -1459,6 +1604,7 @@ function setSourceAndRestart(source) {
             convertBtn.disabled = false;
             convertBtn.textContent = '🔄 Convert to SVG';
             removeBgBtn.disabled = false;
+            upscaleBtn.disabled = false;
         }
         downloadBtn.style.opacity = '0.5';
         downloadBtn.style.pointerEvents = 'none';
@@ -2636,10 +2782,11 @@ function openBulkResultForEditing(index) {
         previewContainer.style.display = 'grid';
         previewContainer.classList.add('active');
         imageLoaded = true;
-        
+
         // Enable buttons
         convertBtn.disabled = false;
         removeBgBtn.disabled = false;
+        upscaleBtn.disabled = false;
         if (isOriginalFile) {
             removeBgBtn.textContent = '🎨 Remove Background';
             removeBgBtn.style.background = '';

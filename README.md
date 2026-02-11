@@ -1,48 +1,89 @@
 <div align="center">
 
   <img src="docs/images/visioncortex-banner.png">
-  <h1>VTracer</h1>
+  <h1>HaidarApp</h1>
 
   <p>
-    <strong>Raster to Vector Graphics Converter built on top of visioncortex</strong>
+    <strong>Browser-first raster → vector pipeline (background removal + retouch + upscale + SVG vectorization + bulk)</strong>
   </p>
 
-  <h3>
-    <a href="https://www.visioncortex.org/vtracer-docs">Article</a>
-    <span> | </span>
-    <a href="https://www.visioncortex.org/vtracer/">Web App</a>
-    <span> | </span>
-    <a href="https://github.com/visioncortex/vtracer/releases">Download</a>
-  </h3>
-
-  <sub>Built with 🦀 by <a href="https://www.visioncortex.org/">The Vision Cortex Research Group</a></sub>
+  <sub>Created by Haidar Esber (Lebanese software developer living in France)</sub>
 </div>
 
 ## Introduction
 
-visioncortex VTracer is an open source software to convert raster images (like jpg & png) into vector graphics (svg). It can vectorize graphics and photographs and trace the curves to output compact vector files.
+HaidarApp is a **browser-first raster → vector pipeline**: take a raster image (PNG/JPG/WEBP), optionally **remove the background using an in-browser AI model**, **retouch** the result, optionally **upscale**, then **vectorize to SVG** using a Rust→WebAssembly vectorization engine.
 
-Comparing to [Potrace](http://potrace.sourceforge.net/) which only accept binarized inputs (Black & White pixmap), VTracer has an image processing pipeline which can handle colored high resolution scans. tl;dr: Potrace uses a `O(n^2)` fitting algorithm, whereas `vtracer` is entirely `O(n)`.
+It contains:
 
-Comparing to Adobe Illustrator's [Image Trace](https://helpx.adobe.com/illustrator/using/image-trace.html), VTracer's output is much more compact (less shapes) as we adopt a stacking strategy and avoid producing shapes with holes.
+- A **custom web UI**: `HaidarApp/` (single image + bulk processing)
+- A simpler **demo webapp**: `webapp/`
+- A **CLI app**: `cmdapp/` (command-line raster → SVG conversion)
 
-VTracer is originally designed for processing high resolution scans of historic blueprints up to gigapixels. At the same time, VTracer can also handle low resolution pixel art, simulating `image-rendering: pixelated` for retro game artworks.
+## What the site does (from the code)
 
-Technical descriptions of the [tracing algorithm](https://www.visioncortex.org/vtracer-docs) and [clustering algorithm](https://www.visioncortex.org/impression-docs).
+### Single-image workflow (HaidarApp)
+
+The `HaidarApp/app/www/` UI implements an interactive pipeline:
+
+- **Load image** via drag & drop / file picker (renders to an HTML canvas)
+- **AI background removal** using `@imgly/background-removal` running in the browser (ONNX Runtime Web), configured with `model: 'isnet_fp16'`
+  - Includes a cleanup pass to remove low-alpha “invisible residue”
+- **Manual retouching** tools (brush size + remove/restore modes) to refine the result before exporting
+- **Upscale** options (2× / 4×) to improve detail before tracing
+- **Vectorize to SVG** via WebAssembly:
+  - **Color mode** uses incremental clustering + vectorization and outputs many filled paths using each cluster’s color
+  - **B/W mode** thresholds to a binary image and traces filled black shapes
+  - Special handling to preserve transparency by using a “key color” that is discarded from the final SVG
+- **Export** as SVG (and additional raster exports in the UI such as PNG / “no-bg” image)
+
+### Bulk workflow (HaidarApp)
+
+The `HaidarApp/app/www/bulk.html` + `bulk.js` page processes up to 50 images and produces a downloadable ZIP:
+
+1. Load image
+2. Upscale (2×) + optional sharpening
+3. Remove background (same in-browser AI model)
+4. Vectorize to SVG (WASM converter)
+5. Convert the result to JPEG (SVG-first, with canvas fallback)
+6. Bundle outputs into a ZIP for download
+
+### Core vectorization engine (Rust → WASM)
+
+The WebAssembly module (Rust) exposes `ColorImageConverter` and `BinaryImageConverter` and writes SVG `<path>` elements into a target `<svg>` element. The key algorithmic knobs surfaced through the UI/params include:
+
+- `filter_speckle`, `color_precision`, `layer_difference`
+- `corner_threshold`, `length_threshold`, `splice_threshold`
+- curve fitting mode: pixel/polygon/spline
+- hierarchical mode: stacked/cutout (color mode)
+
+The underlying vectorization approach supports both **B/W tracing** and **true-color vectorization**, exposing key tuning parameters (speckle filtering, color precision, curve fitting, stacked/cutout behavior) through the UI.
 
 ## Web App
 
-VTracer and its [core library](//github.com/visioncortex/visioncortex) is implemented in [Rust](//www.rust-lang.org/). It provides us a solid foundation to develop robust and efficient algorithms and easily bring it to interactive applications. The webapp is a perfect showcase of the capability of the Rust + wasm platform.
+The web app runs fully client-side: JavaScript UI + WebAssembly vectorization + optional in-browser AI background removal.
 
-![screenshot](docs/images/screenshot-01.png)
+## Quickstart (HaidarApp)
 
-![screenshot](docs/images/screenshot-02.png)
+Prereqs: Rust + `wasm-pack`, Node.js + npm.
+
+```bash
+cd HaidarApp/app
+wasm-pack build --target web --out-dir www/pkg
+
+cd www
+npm install
+npm start
+```
+
+Then open `http://localhost:8080`. The bulk page is available at `bulk.html`.
+
 
 ## Cmd App
 
 ```sh
-visioncortex VTracer 0.6.0
-A cmd app to convert images into vector graphics.
+Haidar Vectorizer (based on VTracer) 0.6.5
+Raster-to-vector (SVG) converter.
 
 USAGE:
     vtracer [OPTIONS] --input <input> --output <output>
@@ -71,87 +112,20 @@ OPTIONS:
     -s, --splice_threshold <splice_threshold>    Minimum angle displacement (degree) to splice a spline
 ```
 
-## Downloads
+## Credits (libraries & tooling)
 
-You can download pre-built binaries from [Releases](https://github.com/visioncortex/vtracer/releases).
+This repo stands on excellent open-source work:
 
-You can also install the program from source from [crates.io/vtracer](https://crates.io/crates/vtracer):
+- **visioncortex / VTracer lineage**: the Rust tracing + clustering foundation used by the vectorization engine  
+  - https://github.com/visioncortex/vtracer  
+  - https://github.com/visioncortex/visioncortex
+- **Rust WASM bindings**: `wasm-bindgen` + `web-sys` for exposing Rust converters to the browser
+- **In-browser background removal**: `@imgly/background-removal` (uses `onnxruntime-web` under the hood)
+- **ZIP bundling (bulk exports)**: `jszip`
+- **Bundling/dev server**: `webpack` / `webpack-dev-server`
 
-```sh
-cargo install vtracer
-```
+## Licensing
 
-> You are strongly advised to not download from any other third-party sources 
+See `LICENSE`, `LICENSE-MIT`, and `LICENSE-APACHE` files in this repository and subprojects. Third-party dependencies retain their respective licenses.
 
-### Usage
 
-```sh
-./vtracer --input input.jpg --output output.svg
-```
-
-### Rust Library
-
-You can install [`vtracer`](https://crates.io/crates/vtracer) as a Rust library.
-
-```sh
-cargo add vtracer
-```
-
-### Python Library
-
-Since `0.6`, [`vtracer`](https://pypi.org/project/vtracer/) is also packaged as Python native extensions, thanks to the awesome [pyo3](https://github.com/PyO3/pyo3) project.
-
-```sh
-pip install vtracer
-```
-
-## In the wild
-
-VTracer is used by the following products (open a PR to add yours):
-
-<table>
-  <tbody>
-    <tr>
-      <td><a href="https://logo.aliyun.com/logo#/name"><img src="docs/images/aliyun-logo.png" width="250"/></a>
-      <br>Smart logo design
-      </td>
-      <td></td>
-    </tr>
-  </tbody>
-</table>
-
-## Citations
-
-VTracer has since been cited by a few academic papers in computer graphics / vision research. Please kindly let us know if you have cited our work:
-
-+ SKILL 2023 [Framework to Vectorize Digital Artworks for Physical Fabrication based on Geometric Stylization Techniques](https://www.researchgate.net/publication/374448489_Framework_to_Vectorize_Digital_Artworks_for_Physical_Fabrication_based_on_Geometric_Stylization_Techniques)
-+ arXiv 2023 [Image Vectorization: a Review](https://arxiv.org/abs/2306.06441)
-+ arXiv 2023 [StarVector: Generating Scalable Vector Graphics Code from Images](https://arxiv.org/abs/2312.11556)
-+ arXiv 2024 [Text-Based Reasoning About Vector Graphics](https://arxiv.org/abs/2404.06479)
-+ arXiv 2024 [Delving into LLMs' visual understanding ability using SVG to bridge image and text](https://openreview.net/pdf?id=pwlm6Po61I)
-
-## How did VTracer come about?
-
-> The following content is an excerpt from my [unpublished memoir](https://github.com/visioncortex/memoir).
-
-At my teenage, two open source projects in the vector graphics space inspired me the most: Potrace and Anti-Grain Geometry (AGG).
-
-Many years later, in 2020, I was developing a video processing engine. And it became evident that it requires way more investment to be commercially viable. So before abandoning the project, I wanted to publish *something* as open-source for posterity. At that time, I already developed a prototype vector graphics tracer. It can convert high-resolution scans of hand-drawn blueprints into vectors. But it can only process black and white images, and can only output polygons, not splines.
-
-The plan was to fully develop the vectorizer: to handle color images and output splines. I recruited a very talented intern, [@shpun817](https://github.com/shpun817), to work on VTracer. I grafted the frontend of the video processing engine - the ["The Clustering Algorithm"](https://www.visioncortex.org/impression-docs#the-clustering-algorithm) as the pre-processor.
-
-Three months later, we published the first version on Reddit. Out of my surprise, the response of such an underwhelming project was overwhelming.
-
-## What's next?
-
-There are several things in my mind:
-
-1. Path simplification. Implement a post-process filter to the output paths to further reduce the number of splines.
-
-2. Perfect cut-out mode. Right now in cut-out mode, the shapes do not share boundaries perfectly, but have seams.
-
-3. Pencil tracing. Instead of tracing shapes as closed paths, may be we can attempt to skeletonize the shapes as open paths. The output would be clean, fixed width strokes.
-
-4. Image cleaning. Right now the tracer works best on losslessly compressed pngs. If an image suffered from jpeg noises, it could impact the tracing quality. We might be able to develop a pre-filtering pass that denoises the input.
-
-If you are interested in working on them or willing to sponsor its development, feel free to get in touch.

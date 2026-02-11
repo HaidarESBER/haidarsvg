@@ -1,9 +1,12 @@
 [package]
 name = "vtracer"
 version = "0.6.5"
-authors = ["Chris Tsang <chris.2y3@outlook.com>"]
+authors = [
+  "Haidar Esber",
+  "Chris Tsang <chris.2y3@outlook.com>"
+]
 edition = "2021"
-description = "A cmd app to convert images into vector graphics."
+description = "Raster-to-vector (SVG) converter. Personalised build by Haidar Esber (Lebanese software developer living in France)."
 license = "MIT OR Apache-2.0"
 homepage = "http://www.visioncortex.org/vtracer"
 repository = "https://github.com/visioncortex/vtracer/"
