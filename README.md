@@ -1,131 +1,190 @@
 <div align="center">
 
-  <img src="docs/images/visioncortex-banner.png">
-  <h1>HaidarApp</h1>
+# 🎨 HaidarApp
 
-  <p>
-    <strong>Browser-first raster → vector pipeline (background removal + retouch + upscale + SVG vectorization + bulk)</strong>
-  </p>
+### Turn any raster image into clean, scalable SVG — right in your browser.
 
-  <sub>Created by Haidar Esber (Lebanese software developer living in France)</sub>
+**AI background removal · manual retouch · upscaling · true-color & B/W vectorization · bulk processing**
+
+[![Live Demo](https://img.shields.io/badge/▶_Live_Demo-haidaresber.github.io-4f46e5?style=for-the-badge)](https://haidaresber.github.io/haidarsvg/)
+
+[![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue.svg)](#-license)
+![Rust](https://img.shields.io/badge/Rust-WASM-orange?logo=rust&logoColor=white)
+![WebAssembly](https://img.shields.io/badge/WebAssembly-654FF0?logo=webassembly&logoColor=white)
+![Client-side](https://img.shields.io/badge/100%25-client--side-16a34a)
+
+<sub>Created by **Haidar Esber** — Lebanese software developer based in France 🇱🇧🇫🇷</sub>
+
 </div>
 
-## Introduction
+---
 
-HaidarApp is a **browser-first raster → vector pipeline**: take a raster image (PNG/JPG/WEBP), optionally **remove the background using an in-browser AI model**, **retouch** the result, optionally **upscale**, then **vectorize to SVG** using a Rust→WebAssembly vectorization engine.
+## What is HaidarApp?
 
-It contains:
+HaidarApp is a **fully client-side raster → vector pipeline**. Drop in a `PNG`, `JPG`, or
+`WEBP`, optionally strip the background with an in-browser AI model, retouch and upscale it,
+then trace it to a crisp `SVG` — all without uploading a single byte to a server. The heavy
+lifting (vectorization) runs in a Rust engine compiled to **WebAssembly**; background removal
+runs on **ONNX Runtime Web**.
 
-- A **custom web UI**: `HaidarApp/` (single image + bulk processing)
-- A simpler **demo webapp**: `webapp/`
-- A **CLI app**: `cmdapp/` (command-line raster → SVG conversion)
+> **No install, no account, no upload.** Everything runs in your browser tab.
+> 👉 **[Try the live demo](https://haidaresber.github.io/haidarsvg/)**
 
-## What the site does (from the code)
+## The pipeline
 
-### Single-image workflow (HaidarApp)
+```mermaid
+flowchart LR
+    A["🖼️ Raster image<br/>PNG · JPG · WEBP"] --> B["🎨 AI background<br/>removal"]
+    B --> C["🖌️ Manual retouch<br/>remove / restore"]
+    C --> D["🔍 Upscale<br/>2× / 4×"]
+    D --> E["🔄 Vectorize<br/>Rust → WASM"]
+    E --> F["📐 SVG output"]
+```
 
-The `HaidarApp/app/www/` UI implements an interactive pipeline:
+Every stage is optional except the last — jump straight to vectorization, or run the whole chain.
 
-- **Load image** via drag & drop / file picker (renders to an HTML canvas)
-- **AI background removal** using `@imgly/background-removal` running in the browser (ONNX Runtime Web), configured with `model: 'isnet_fp16'`
-  - Includes a cleanup pass to remove low-alpha “invisible residue”
-- **Manual retouching** tools (brush size + remove/restore modes) to refine the result before exporting
-- **Upscale** options (2× / 4×) to improve detail before tracing
-- **Vectorize to SVG** via WebAssembly:
-  - **Color mode** uses incremental clustering + vectorization and outputs many filled paths using each cluster’s color
-  - **B/W mode** thresholds to a binary image and traces filled black shapes
-  - Special handling to preserve transparency by using a “key color” that is discarded from the final SVG
-- **Export** as SVG (and additional raster exports in the UI such as PNG / “no-bg” image)
+## Features
 
-### Bulk workflow (HaidarApp)
+| | Feature | Details |
+|---|---|---|
+| 🎨 | **AI background removal** | `@imgly/background-removal` (`isnet_fp16` model on ONNX Runtime Web), plus a residue-cleanup pass that removes low-alpha "ghost" pixels |
+| 🖌️ | **Manual retouch** | Brush-based remove/restore to fix edges the model missed, with adjustable brush size |
+| 🔍 | **Upscaling** | 2× / 4× high-quality canvas resampling to recover detail before tracing |
+| 🔄 | **True-color vectorization** | Incremental clustering → many colored `<path>` layers; stacked or cutout hierarchy |
+| ⬛ | **B/W vectorization** | Threshold to a binary image and trace filled shapes |
+| 🫥 | **Transparency-aware** | Uses a discarded "key color" so transparent regions survive into the SVG |
+| 💾 | **Flexible export** | Download as **SVG**, **PNG**, or a background-free raster |
+| 📦 | **Bulk mode** | Batch up to **50** images through the full pipeline and download a single **ZIP** |
 
-The `HaidarApp/app/www/bulk.html` + `bulk.js` page processes up to 50 images and produces a downloadable ZIP:
+### Bulk workflow
 
-1. Load image
-2. Upscale (2×) + optional sharpening
-3. Remove background (same in-browser AI model)
-4. Vectorize to SVG (WASM converter)
-5. Convert the result to JPEG (SVG-first, with canvas fallback)
-6. Bundle outputs into a ZIP for download
+The bulk page (`bulk.html`) runs each image through a fixed pipeline and zips the results:
 
-### Core vectorization engine (Rust → WASM)
+```
+📤 Upload  →  🔍 Upscale 2×  →  🎨 Remove BG  →  🔄 Vectorize  →  📸 SVG→JPEG  →  📦 ZIP
+```
 
-The WebAssembly module (Rust) exposes `ColorImageConverter` and `BinaryImageConverter` and writes SVG `<path>` elements into a target `<svg>` element. The key algorithmic knobs surfaced through the UI/params include:
+## Repository layout
 
-- `filter_speckle`, `color_precision`, `layer_difference`
-- `corner_threshold`, `length_threshold`, `splice_threshold`
-- curve fitting mode: pixel/polygon/spline
-- hierarchical mode: stacked/cutout (color mode)
+This repo contains three ways to use the same vectorization core:
 
-The underlying vectorization approach supports both **B/W tracing** and **true-color vectorization**, exposing key tuning parameters (speckle filtering, color precision, curve fitting, stacked/cutout behavior) through the UI.
+| Path | What it is | Best for |
+|---|---|---|
+| [`HaidarApp/`](HaidarApp/) | The full web app (single-image UI + bulk page) | End users — the complete pipeline |
+| [`webapp/`](webapp/) | A minimal browser demo of the tracer | Learning / embedding the core |
+| [`cmdapp/`](cmdapp/) | The `vtracer` command-line tool | Scripting & batch automation |
 
-## Web App
+## Getting started
 
-The web app runs fully client-side: JavaScript UI + WebAssembly vectorization + optional in-browser AI background removal.
+### Option 1 — Just use it (recommended)
 
-## Quickstart (HaidarApp)
+No setup required. Open the hosted app:
 
-Prereqs: Rust + `wasm-pack`, Node.js + npm.
+**→ https://haidaresber.github.io/haidarsvg/**
+
+### Option 2 — Run the web app locally
+
+**Prerequisites:** [Rust](https://www.rust-lang.org/tools/install) (with the
+`wasm32-unknown-unknown` target), [`wasm-pack`](https://rustwasm.github.io/wasm-pack/), and
+[Node.js](https://nodejs.org/) + npm. See [`HaidarApp/INSTALL.md`](HaidarApp/INSTALL.md) for
+detailed setup and troubleshooting.
+
+```bash
+cd HaidarApp
+./build.sh          # builds the WASM package into app/www/pkg and installs npm deps
+cd app/www
+npm start
+```
+
+Then open <http://localhost:8080>. The bulk page is at `bulk.html`.
+
+<details>
+<summary>Manual build (without <code>build.sh</code>)</summary>
 
 ```bash
 cd HaidarApp/app
 wasm-pack build --target web --out-dir www/pkg
-
 cd www
 npm install
-npm start
+npm start          # or: npm run build  (production bundle)
+```
+</details>
+
+### Option 3 — Command-line (`vtracer`)
+
+```bash
+# Run straight from the workspace
+cargo run --release -p vtracer -- --input input.png --output output.svg
+
+# …or install the binary
+cargo install --path cmdapp
+vtracer --input input.png --output output.svg --preset photo
 ```
 
-Then open `http://localhost:8080`. The bulk page is available at `bulk.html`.
+## Tuning the tracer
 
+Both the UI and CLI expose the same knobs. Sensible presets (`bw`, `poster`, `photo`) cover
+most cases; reach for the individual parameters when you need finer control.
 
-## Cmd App
+| Parameter | What it does |
+|---|---|
+| `colormode` | `color` (true color) or `bw` (binary) |
+| `hierarchical` | `stacked` (layers overlap) or `cutout` (disjoint shapes) — color mode only |
+| `mode` | Curve fitting: `pixel` · `polygon` · `spline` |
+| `filter_speckle` | Discard patches smaller than *N* px (denoise) |
+| `color_precision` | Significant bits per RGB channel |
+| `gradient_step` / `layer_difference` | Color distance between layers |
+| `corner_threshold` | Minimum angle (°) to count as a corner |
+| `segment_length` | Subdivide-and-smooth until segments are shorter than *N* |
+| `splice_threshold` | Minimum angle (°) to splice a spline |
+| `path_precision` | Decimal places in path coordinates |
 
-```sh
-Haidar Vectorizer (based on VTracer) 0.6.5
-Raster-to-vector (SVG) converter.
+<details>
+<summary>Full CLI reference</summary>
 
-USAGE:
-    vtracer [OPTIONS] --input <input> --output <output>
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-OPTIONS:
-        --colormode <color_mode>                 True color image `color` (default) or Binary image `bw`
-    -p, --color_precision <color_precision>      Number of significant bits to use in an RGB channel
-    -c, --corner_threshold <corner_threshold>    Minimum momentary angle (degree) to be considered a corner
-    -f, --filter_speckle <filter_speckle>        Discard patches smaller than X px in size
-    -g, --gradient_step <gradient_step>          Color difference between gradient layers
-        --hierarchical <hierarchical>
-            Hierarchical clustering `stacked` (default) or non-stacked `cutout`. Only applies to color mode.
-
-    -i, --input <input>                          Path to input raster image
-    -m, --mode <mode>                            Curver fitting mode `pixel`, `polygon`, `spline`
-    -o, --output <output>                        Path to output vector graphics
-        --path_precision <path_precision>        Number of decimal places to use in path string
-        --preset <preset>                        Use one of the preset configs `bw`, `poster`, `photo`
-    -l, --segment_length <segment_length>
-            Perform iterative subdivide smooth until all segments are shorter than this length
-
-    -s, --splice_threshold <splice_threshold>    Minimum angle displacement (degree) to splice a spline
 ```
+vtracer [OPTIONS] --input <input> --output <output>
 
-## Credits (libraries & tooling)
+    --colormode <color_mode>            color (default) | bw
+    --hierarchical <hierarchical>       stacked (default) | cutout   (color mode)
+-m, --mode <mode>                       pixel | polygon | spline
+-p, --color_precision <n>               significant bits per RGB channel
+-f, --filter_speckle <n>                discard patches smaller than n px
+-c, --corner_threshold <deg>            minimum corner angle
+-l, --segment_length <n>                subdivide-smooth to segments < n
+-s, --splice_threshold <deg>            minimum splice angle
+-g, --gradient_step <n>                 color diff between gradient layers
+    --path_precision <n>                decimal places in path strings
+    --preset <preset>                   bw | poster | photo
+-i, --input <path>                      input raster image
+-o, --output <path>                     output SVG
+```
+</details>
 
-This repo stands on excellent open-source work:
+## How it works
 
-- **visioncortex / VTracer lineage**: the Rust tracing + clustering foundation used by the vectorization engine  
-  - https://github.com/visioncortex/vtracer  
-  - https://github.com/visioncortex/visioncortex
-- **Rust WASM bindings**: `wasm-bindgen` + `web-sys` for exposing Rust converters to the browser
-- **In-browser background removal**: `@imgly/background-removal` (uses `onnxruntime-web` under the hood)
-- **ZIP bundling (bulk exports)**: `jszip`
-- **Bundling/dev server**: `webpack` / `webpack-dev-server`
+- **Vectorization core** — a Rust engine (VTracer lineage) exposing `ColorImageConverter` and
+  `BinaryImageConverter`, compiled to WebAssembly with `wasm-bindgen`. It clusters pixels,
+  fits curves, and writes `<path>` elements directly into the target `<svg>`.
+- **Background removal** — `@imgly/background-removal` runs the `isnet_fp16` segmentation model
+  via ONNX Runtime Web; the model is fetched once and cached, then works offline.
+- **Everything is local** — images never leave the browser; there is no backend.
 
-## Licensing
+## Tech stack
 
-See `LICENSE`, `LICENSE-MIT`, and `LICENSE-APACHE` files in this repository and subprojects. Third-party dependencies retain their respective licenses.
+**Rust** · **WebAssembly** (`wasm-bindgen`, `web-sys`) · **visioncortex / VTracer** ·
+**ONNX Runtime Web** (`@imgly/background-removal`) · **JSZip** · **webpack**
 
+## Credits
 
+Built on excellent open-source work:
+
+- **[VTracer](https://github.com/visioncortex/vtracer)** & **[visioncortex](https://github.com/visioncortex/visioncortex)** — the Rust tracing + clustering foundation
+- **[`@imgly/background-removal`](https://github.com/imgly/background-removal-js)** — in-browser AI background removal (ONNX Runtime Web)
+- **[JSZip](https://stuk.github.io/jszip/)** — ZIP bundling for bulk exports
+- **[webpack](https://webpack.js.org/)** — bundling & dev server
+
+## 🪪 License
+
+Dual-licensed under **MIT OR Apache-2.0** — see [`LICENSE-MIT`](LICENSE-MIT) and
+[`LICENSE-APACHE`](LICENSE-APACHE). Third-party dependencies retain their own licenses.
