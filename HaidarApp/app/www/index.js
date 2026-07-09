@@ -1,6 +1,10 @@
 import init, { BinaryImageConverter, ColorImageConverter } from './pkg/haidar_app.js';
 import { removeBackground as rembgRemove } from '@imgly/background-removal';
 import JSZip from 'jszip';
+import { showToast } from './toast.js';
+// Set to true to enable verbose debug logging in the console.
+const DEBUG = false;
+const debugLog = (...args) => { if (DEBUG) console.log(...args); };
 
 let runner;
 const canvas = document.getElementById('frame');
@@ -42,7 +46,7 @@ const retouchRestoreBtn = document.getElementById('retouch-restore');
 const retouchDoneBtn = document.getElementById('retouch-done');
 
 // Debug: Check if elements exist
-console.log('Retouch elements:', {
+debugLog('Retouch elements:', {
     retouchBtn: !!retouchBtn,
     retouchControls: !!retouchControls,
     downloadNoBgBtn: !!downloadNoBgBtn,
@@ -102,10 +106,11 @@ if (upscale2xBtn && upscale4xBtn) {
     });
 }
 
-// AI Upscaling with high-quality interpolation
+// Upscale via high-quality canvas interpolation (bilinear/bicubic smoothing).
+// Note: this is a resolution resize, not a machine-learning super-resolution model.
 async function upscaleImage() {
     if (!imageLoaded || !img.src) {
-        alert('Please load an image first.');
+        showToast('Please load an image first.');
         return;
     }
 
@@ -165,11 +170,11 @@ async function upscaleImage() {
         }
         upscaleBtn.disabled = false;
 
-        console.log(`✅ Image upscaled from ${originalWidth}×${originalHeight} to ${newWidth}×${newHeight}`);
+        debugLog(`✅ Image upscaled from ${originalWidth}×${originalHeight} to ${newWidth}×${newHeight}`);
 
     } catch (error) {
         console.error('Error upscaling image:', error);
-        alert('Error upscaling image: ' + error.message);
+        showToast('Error upscaling image: ' + error.message);
         if (btnText.tagName === 'SPAN') {
             btnText.textContent = 'Upscale Image';
         }
@@ -241,7 +246,7 @@ async function removeBackground() {
         } else {
             removeBgBtn.innerHTML = '<span>⏳</span><span>Removing background (rembg model)...</span>';
         }
-        console.log('Processing with @imgly/background-removal (U2-Net - same as rembg Python)...');
+        debugLog('Processing with @imgly/background-removal (U2-Net - same as rembg Python)...');
 
         // Use U2-Net model (same as rembg Python)
         const resultBlob = await rembgRemove(blob, {
@@ -370,14 +375,14 @@ async function removeBackground() {
             img.src = canvas.toDataURL();
             
             // DEBUG: Verify bgRemoved is set
-            console.log('🔵 bgRemoved set to TRUE:', bgRemoved);
-            console.log('🔵 window.bgRemoved set to TRUE:', window.bgRemoved);
-            console.log('🔵 originalImageData exists:', !!originalImageData);
+            debugLog('🔵 bgRemoved set to TRUE:', bgRemoved);
+            debugLog('🔵 window.bgRemoved set to TRUE:', window.bgRemoved);
+            debugLog('🔵 originalImageData exists:', !!originalImageData);
             
             // Clear the flag after a delay to allow img.onload to complete
             setTimeout(() => {
                 window.skipBgReset = false;
-                console.log('🔵 skipBgReset cleared, bgRemoved should still be:', bgRemoved, 'window.bgRemoved:', window.bgRemoved);
+                debugLog('🔵 skipBgReset cleared, bgRemoved should still be:', bgRemoved, 'window.bgRemoved:', window.bgRemoved);
             }, 2000);
             
             // Apply optimized settings
@@ -421,7 +426,7 @@ async function removeBackground() {
                 setTimeout(() => {
                     const rect = currentRetouchBtn.getBoundingClientRect();
                     const computedStyle = window.getComputedStyle(currentRetouchBtn);
-                    console.log('✅ Retouch button enabled:', {
+                    debugLog('✅ Retouch button enabled:', {
                         disabled: currentRetouchBtn.disabled,
                         opacity: computedStyle.opacity,
                         pointerEvents: computedStyle.pointerEvents,
@@ -441,7 +446,7 @@ async function removeBackground() {
                         rect.left + rect.width / 2,
                         rect.top + rect.height / 2
                     );
-                    console.log('Element at button center:', elementAtPoint?.id || elementAtPoint?.tagName);
+                    debugLog('Element at button center:', elementAtPoint?.id || elementAtPoint?.tagName);
                     if (elementAtPoint !== currentRetouchBtn && !currentRetouchBtn.contains(elementAtPoint)) {
                         console.warn('⚠️ Button might be blocked by:', elementAtPoint);
                     }
@@ -454,10 +459,10 @@ async function removeBackground() {
             removeBgBtn.style.background = '#28a745 !important';
             removeBgBtn.disabled = false;
             
-            console.log('✅ Background removal completed with edge refinement');
-            console.log('✅ bgRemoved status:', bgRemoved);
-            console.log('✅ originalImageData status:', !!originalImageData);
-            console.log('Retouch buttons should now be visible and clickable');
+            debugLog('✅ Background removal completed with edge refinement');
+            debugLog('✅ bgRemoved status:', bgRemoved);
+            debugLog('✅ originalImageData status:', !!originalImageData);
+            debugLog('Retouch buttons should now be visible and clickable');
         };
         resultImg.onerror = (error) => {
             throw new Error('Failed to load processed image: ' + error);
@@ -475,12 +480,12 @@ async function removeBackground() {
         removeBgBtn.disabled = false;
         
         if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('model')) {
-            alert('⚠️ Error: Could not load AI model.\n\n' +
+            showToast('⚠️ Error: Could not load AI model.\n\n' +
                   'The U2-Net model needs to be downloaded on first use (~10-20MB).\n\n' +
                   'Please check your internet connection and try again.\n\n' +
                   'After first download, it will be cached for offline use.');
         } else {
-            alert('Error removing background: ' + error.message);
+            showToast('Error removing background: ' + error.message);
         }
     }
 }
@@ -497,7 +502,7 @@ function removeBackgroundOld() {
             const width = canvas.width;
             const height = canvas.height;
             
-            console.log('Starting advanced background removal...');
+            debugLog('Starting advanced background removal...');
             
             // Step 1: Enhanced edge sampling with corner emphasis
             const edgeSamples = [];
@@ -618,8 +623,8 @@ function removeBackgroundOld() {
             const baseTolerance = 40;
             const adaptiveTolerance = baseTolerance + maxVariance * 0.5;
             
-            console.log('Detected background colors:', bgColors.map(c => `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`));
-            console.log('Adaptive tolerance:', adaptiveTolerance.toFixed(1));
+            debugLog('Detected background colors:', bgColors.map(c => `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`));
+            debugLog('Adaptive tolerance:', adaptiveTolerance.toFixed(1));
             
             // Step 3: Calculate local variance to detect textured objects vs uniform background
             const varianceMap = new Array(width * height);
@@ -763,7 +768,7 @@ function removeBackgroundOld() {
                 }
             }
             
-            console.log(`Flood fill processed ${processed} pixels`);
+            debugLog(`Flood fill processed ${processed} pixels`);
             
             // Step 5: Post-processing - clean up isolated pixels and smooth edges
             const cleanedMask = [...mask];
@@ -829,7 +834,7 @@ function removeBackgroundOld() {
                 }
             }
             
-            console.log(`Removed ${removedPixels} background pixels (${Math.round(removedPixels / (width * height) * 100)}%)`);
+            debugLog(`Removed ${removedPixels} background pixels (${Math.round(removedPixels / (width * height) * 100)}%)`);
             
             const newImageData = new ImageData(newData, width, height);
             ctx.putImageData(newImageData, 0, 0);
@@ -843,12 +848,12 @@ function removeBackgroundOld() {
             removeBgBtn.style.background = '#28a745 !important';
             removeBgBtn.disabled = false;
             
-            console.log('✅ Advanced background removal completed');
+            debugLog('✅ Advanced background removal completed');
         } catch (error) {
             console.error('Error removing background:', error);
             removeBgBtn.textContent = '🎨 Remove Background';
             removeBgBtn.disabled = false;
-            alert('Error removing background: ' + error.message);
+            showToast('Error removing background: ' + error.message);
         }
     }, 10);
 }
@@ -876,7 +881,7 @@ function applyNoBgSettings() {
     document.getElementById('splice').value = globalsplice;
     document.getElementById('splicevalue').innerHTML = globalsplice;
     
-    console.log('Applied default no-background settings');
+    debugLog('Applied default no-background settings');
 }
 
 // Remove background button
@@ -884,7 +889,7 @@ removeBgBtn.addEventListener('click', function() {
     if (imageLoaded && img.src) {
         removeBackground();
     } else {
-        alert('Please load an image first.');
+        showToast('Please load an image first.');
     }
 });
 
@@ -902,7 +907,7 @@ window.handleRetouchClick = function(e) {
     
     // Prevent rapid clicking
     if (retouchClickLock) {
-        console.log('⏸️ Retouch click locked, ignoring');
+        debugLog('⏸️ Retouch click locked, ignoring');
         return false;
     }
     
@@ -918,12 +923,12 @@ window.handleRetouchClick = function(e) {
     // Use the current value
     if (!currentBgRemoved && !bgRemoved) {
         console.error('❌ bgRemoved is FALSE! Cannot proceed.');
-        alert('Please remove background first.');
+        showToast('Please remove background first.');
         return false;
     }
     
     if (!originalImageData) {
-        alert('Error: Original image data not available. Please remove background again.');
+        showToast('Error: Original image data not available. Please remove background again.');
         return false;
     }
     
@@ -968,7 +973,7 @@ window.handleRetouchClick = function(e) {
             retouchRestoreBtn.classList.remove('active');
         }
         
-        console.log('✅ Retouching mode ACTIVATED, mode:', retouchMode);
+        debugLog('✅ Retouching mode ACTIVATED, mode:', retouchMode);
     } else {
         // DEACTIVATE RETOUCHING
         if (retouchControls) {
@@ -994,7 +999,7 @@ window.handleRetouchClick = function(e) {
             window.skipBgReset = false;
         }, 500);
         
-        console.log('⏸️ Retouching mode DEACTIVATED');
+        debugLog('⏸️ Retouching mode DEACTIVATED');
     }
     
     return false;
@@ -1008,7 +1013,7 @@ function attachRetouchListeners() {
         return;
     }
     
-    console.log('Attaching retouch button event listener to:', actualRetouchBtn);
+    debugLog('Attaching retouch button event listener to:', actualRetouchBtn);
     
     // Remove any existing listeners
     const newBtn = actualRetouchBtn.cloneNode(true);
@@ -1018,7 +1023,7 @@ function attachRetouchListeners() {
     // Attach click listener
     freshBtn.addEventListener('click', window.handleRetouchClick, true);
     freshBtn.addEventListener('mousedown', function(e) {
-        console.log('🔵 Retouch button mousedown event');
+        debugLog('🔵 Retouch button mousedown event');
         e.preventDefault();
         window.handleRetouchClick(e);
     }, true);
@@ -1036,7 +1041,7 @@ if (brushSizeSlider) {
     brushSizeSlider.addEventListener('input', function() {
         brushSize = parseInt(this.value);
         if (brushSizeValue) brushSizeValue.textContent = brushSize;
-        console.log('Brush size changed to:', brushSize);
+        debugLog('Brush size changed to:', brushSize);
     });
 }
 
@@ -1071,7 +1076,7 @@ if (retouchRemoveBtn) {
         if (retouchRestoreBtn) {
             retouchRestoreBtn.classList.remove('active');
         }
-        console.log('✅ Retouch mode set to: remove');
+        debugLog('✅ Retouch mode set to: remove');
     });
 }
 
@@ -1105,7 +1110,7 @@ if (retouchRestoreBtn) {
         if (retouchRemoveBtn) {
             retouchRemoveBtn.classList.remove('active');
         }
-        console.log('✅ Retouch mode set to: restore');
+        debugLog('✅ Retouch mode set to: restore');
     });
 }
 
@@ -1144,7 +1149,7 @@ if (retouchDoneBtn) {
             window.skipBgReset = false;
         }, 500);
         
-        console.log('✅ Retouching done and saved');
+        debugLog('✅ Retouching done and saved');
     });
 }
 
@@ -1294,7 +1299,7 @@ function paintLine(x1, y1, x2, y2) {
 downloadNoBgBtn.addEventListener('click', function(e) {
     e.preventDefault();
     if (!bgRemoved) {
-        alert('Please remove background first.');
+        showToast('Please remove background first.');
         return;
     }
     
@@ -1312,9 +1317,9 @@ downloadNoBgBtn.addEventListener('click', function(e) {
 });
 
 // Initialize WASM module
-console.log('Initializing WASM module...');
+debugLog('Initializing WASM module...');
 init('./pkg/haidar_app_bg.wasm').then(() => {
-    console.log('WASM module initialized successfully!');
+    debugLog('WASM module initialized successfully!');
     wasmInitialized = true;
     // Enable buttons if image is already loaded
     if (imageLoaded) {
@@ -1323,7 +1328,7 @@ init('./pkg/haidar_app_bg.wasm').then(() => {
     }
 }).catch((err) => {
     console.error('Failed to initialize WASM module:', err);
-    alert('Failed to initialize the application. Please refresh the page.');
+    showToast('Failed to initialize the application. Please refresh the page.');
 });
 
 // Paste from clipboard
@@ -1348,17 +1353,17 @@ document.addEventListener('paste', function (e) {
 
 // Convert button
 convertBtn.addEventListener('click', function (e) {
-    console.log('Convert button clicked', { imageLoaded, hasImgSrc: !!img.src, wasmInitialized });
+    debugLog('Convert button clicked', { imageLoaded, hasImgSrc: !!img.src, wasmInitialized });
     if (!wasmInitialized) {
-        alert('WASM module is still initializing. Please wait a moment and try again.');
+        showToast('WASM module is still initializing. Please wait a moment and try again.');
         return;
     }
     if (imageLoaded && img.src) {
-        console.log('Starting conversion...');
+        debugLog('Starting conversion...');
         restart();
     } else {
         console.warn('Cannot convert: image not loaded', { imageLoaded, hasImgSrc: !!img.src });
-        alert('Please load an image first by dragging and dropping or selecting a file.');
+        showToast('Please load an image first by dragging and dropping or selecting a file.');
     }
 });
 
@@ -1415,7 +1420,7 @@ document.getElementById('export-png').addEventListener('click', function (e) {
         }, 'image/png');
     };
     img.onerror = function() {
-        alert('Error converting SVG to PNG. Please try again.');
+        showToast('Error converting SVG to PNG. Please try again.');
         URL.revokeObjectURL(url);
     };
     img.src = url;
@@ -1566,7 +1571,7 @@ function updateButtonSelection(selectedId, otherIds) {
 function setSourceAndRestart(source) {
     // Don't reset if we're in the middle of background removal
     if (window.skipBgReset) {
-        console.log('Skipping setSourceAndRestart because skipBgReset is true');
+        debugLog('Skipping setSourceAndRestart because skipBgReset is true');
         return;
     }
     
@@ -1574,7 +1579,7 @@ function setSourceAndRestart(source) {
     img.onload = function () {
         // Don't reset if we're in the middle of background removal
         if (window.skipBgReset) {
-            console.log('Skipping img.onload reset because skipBgReset is true');
+            debugLog('Skipping img.onload reset because skipBgReset is true');
             return;
         }
         const width = img.naturalWidth, height = img.naturalHeight;
@@ -1631,12 +1636,12 @@ function setSourceAndRestart(source) {
             isRetouching = false;
         } else {
             // Preserve retouching state if we're in the middle of retouching
-            console.log('Preserving state during img.onload - isRetouching:', isRetouching, 'bgRemoved:', bgRemoved);
+            debugLog('Preserving state during img.onload - isRetouching:', isRetouching, 'bgRemoved:', bgRemoved);
         }
         removeBgBtn.textContent = '🎨 Remove Background';
         removeBgBtn.style.background = '#28a745 !important';
         canvas.style.cursor = 'default';
-        console.log('Image loaded and preview shown. Buttons enabled:', wasmInitialized);
+        debugLog('Image loaded and preview shown. Buttons enabled:', wasmInitialized);
     }
 }
 
@@ -1679,11 +1684,11 @@ function restart() {
         // No background removal yet, use original image
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
-        console.log('Using original image (no background removal yet)');
+        debugLog('Using original image (no background removal yet)');
     } else {
         // Background was removed (and possibly retouched), keep current canvas content
         // The canvas already has the retouched version, don't overwrite it!
-        console.log('Using current canvas content (includes retouching if applicable)');
+        debugLog('Using current canvas content (includes retouching if applicable)');
     }
     
     // Filter out transparent pixels before vectorization
@@ -1724,13 +1729,13 @@ function restart() {
             console.warn('Error stopping previous runner:', e);
         }
     }
-    console.log('Creating converter runner with params:', converter_params);
+    debugLog('Creating converter runner with params:', converter_params);
     runner = new ConverterRunner(converter_params);
     progress.value = 0;
     progressregion.style.display = 'block';
-    console.log('Starting conversion, progress bar shown');
+    debugLog('Starting conversion, progress bar shown');
     runner.run().then(() => {
-        console.log('Conversion complete!');
+        debugLog('Conversion complete!');
         convertBtn.textContent = '🔄 Convert to SVG';
         convertBtn.disabled = false;
         
@@ -1742,7 +1747,7 @@ function restart() {
         console.error('Conversion error:', err);
         convertBtn.textContent = '🔄 Convert to SVG';
         convertBtn.disabled = false;
-        alert('Conversion failed: ' + err.message);
+        showToast('Conversion failed: ' + err.message);
     });
 }
 
@@ -1753,14 +1758,14 @@ function deg2rad(deg) {
 class ConverterRunner {
     constructor (converter_params) {
         try {
-            console.log('Initializing converter, mode:', clustering_mode);
+            debugLog('Initializing converter, mode:', clustering_mode);
             this.converter =
                 clustering_mode == 'color' ?
                     ColorImageConverter.new_with_string(converter_params):
                     BinaryImageConverter.new_with_string(converter_params);
-            console.log('Converter created, initializing...');
+            debugLog('Converter created, initializing...');
             this.converter.init();
-            console.log('Converter initialized successfully');
+            debugLog('Converter initialized successfully');
             this.stopped = false;
         } catch (error) {
             console.error('Error creating converter:', error);
@@ -1780,11 +1785,11 @@ class ConverterRunner {
 
     run () {
         const This = this;
-        console.log('ConverterRunner.run() called');
+        debugLog('ConverterRunner.run() called');
         return new Promise((resolve) => {
             setTimeout(function tick () {
                 if (This.stopped || !This.converter) {
-                    console.log('Conversion stopped or converter freed');
+                    debugLog('Conversion stopped or converter freed');
                     resolve();
                     return;
                 }
@@ -1803,7 +1808,7 @@ class ConverterRunner {
                             document.getElementById('canvas-container').style.opacity = (50 - progressValue) / 25;
                         }
                         if (progressValue >= progress.max) {
-                            console.log('Conversion 100% complete');
+                            debugLog('Conversion 100% complete');
                             progressregion.style.display = 'none';
                             progress.value = 0;
                             // Enable download buttons when conversion is complete
@@ -1820,7 +1825,7 @@ class ConverterRunner {
                             setTimeout(tick, 1);
                         } else {
                             if (done) {
-                                console.log('Conversion done (tick returned true)');
+                                debugLog('Conversion done (tick returned true)');
                             }
                             resolve();
                         }
@@ -1830,7 +1835,7 @@ class ConverterRunner {
                         resolve();
                     }
                 } else {
-                    console.log('Conversion stopped');
+                    debugLog('Conversion stopped');
                     resolve();
                 }
             }, 1);
@@ -1927,12 +1932,12 @@ function updateBulkFileList() {
 // Process all images
 bulkProcessBtn.addEventListener('click', async function() {
     if (bulkFiles.length === 0) {
-        alert('Please select images first.');
+        showToast('Please select images first.');
         return;
     }
     
     if (!wasmInitialized) {
-        alert('WASM module is still initializing. Please wait a moment and try again.');
+        showToast('WASM module is still initializing. Please wait a moment and try again.');
         return;
     }
     
@@ -2435,7 +2440,7 @@ async function vectorizeBulkImage(imageBlob) {
                                 
                                 const childrenCount = svg.children ? svg.children.length : 0;
                                 
-                                console.log('Bulk conversion finished:', {
+                                debugLog('Bulk conversion finished:', {
                                     svgLength: svgString ? svgString.length : 0,
                                     childrenCount: childrenCount
                                 });
@@ -2823,7 +2828,7 @@ function openBulkResultForEditing(index) {
         bulkStatus.textContent = `✏️ Editing: ${result.name}. Make your changes and click "Convert to SVG" to update.`;
     };
     tempImg.onerror = () => {
-        alert('Failed to load image for editing.');
+        showToast('Failed to load image for editing.');
         window.skipBgReset = false;
     };
     tempImg.src = imgUrl;
@@ -3058,7 +3063,7 @@ function updateBulkResultAfterEdit() {
 // Download all results as ZIP
 bulkDownloadBtn.addEventListener('click', async function() {
     if (bulkResults.length === 0) {
-        alert('No results to download. Please process images first.');
+        showToast('No results to download. Please process images first.');
         return;
     }
     
@@ -3104,7 +3109,7 @@ bulkDownloadBtn.addEventListener('click', async function() {
         
     } catch (error) {
         console.error('Error creating ZIP:', error);
-        alert('Error creating ZIP file: ' + error.message);
+        showToast('Error creating ZIP file: ' + error.message);
         bulkDownloadBtn.disabled = false;
         bulkDownloadBtn.textContent = '💾 Download All Results (ZIP)';
     }

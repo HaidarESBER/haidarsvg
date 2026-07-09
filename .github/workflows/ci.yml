@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  workspace:
+    name: Build & test workspace (cmdapp / webapp)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format check (informational)
+        run: cargo fmt --all --check
+        continue-on-error: true
+      - name: Clippy (informational)
+        run: cargo clippy --workspace --all-targets
+        continue-on-error: true
+      - name: Build
+        run: cargo build --workspace
+      - name: Test
+        run: cargo test --workspace
+
+  haidarapp-wasm:
+    name: Build HaidarApp (Rust → WASM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: HaidarApp/app
+      - name: Build wasm crate
+        working-directory: HaidarApp/app
+        run: cargo build --target wasm32-unknown-unknown
+
+  web:
+    name: Lint HaidarApp web frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Syntax-check frontend JS
+        working-directory: HaidarApp/app/www
+        run: |
+          for f in index.js bulk.js toast.js; do
+            node --check "$f"
+          done

@@ -1,155 +1,77 @@
-# HaidarApp - Installation Guide
+# HaidarApp — Installation & Troubleshooting
 
 ## Prerequisites
 
-Before building HaidarApp, you need to install the following:
-
 ### 1. Rust and Cargo
 
-**Windows:**
-1. Visit https://www.rust-lang.org/tools/install
-2. Download and run `rustup-init.exe`
-3. Follow the installation wizard
-4. **Important**: Restart your terminal/command prompt after installation
-5. Verify installation by running: `cargo --version`
-
-**Alternative (using Chocolatey):**
-```bash
-choco install rust
-```
+- Install from <https://www.rust-lang.org/tools/install> (on Windows, run
+  `rustup-init.exe`).
+- **Restart your terminal** afterwards so `PATH` is updated.
+- Verify: `cargo --version`
+- Add the WebAssembly target: `rustup target add wasm32-unknown-unknown`
 
 ### 2. Node.js and npm
 
-1. Visit https://nodejs.org/
-2. Download the LTS version (recommended)
-3. Run the installer
-4. Verify installation:
-   ```bash
-   node --version
-   npm --version
-   ```
+- Install the LTS release from <https://nodejs.org/>.
+- Verify: `node --version` and `npm --version`
 
-**Alternative (using Chocolatey):**
-```bash
-choco install nodejs-lts
-```
+### 3. wasm-pack
 
-### 3. wasm-pack (will be installed automatically)
-
-The build script will automatically install `wasm-pack` if it's not already installed. However, you can also install it manually:
+`build.sh` installs it automatically if missing, or install it manually:
 
 ```bash
 cargo install wasm-pack
 ```
 
-## Installation Steps
+## Build
 
-### Step 1: Install Prerequisites
+From the `HaidarApp/` directory:
 
-Make sure you have:
-- ✅ Rust/Cargo installed
-- ✅ Node.js and npm installed
-
-### Step 2: Build the Project
-
-**Windows:**
 ```bash
-cd HaidarApp
-build.bat
+./build.sh          # Linux/macOS (chmod +x build.sh first if needed)
 ```
 
-**Linux/Mac:**
+`build.sh` installs `wasm-pack` if missing, builds the WASM package into
+`app/www/pkg`, and runs `npm install`.
+
+On Windows (Git Bash / WSL) you can run `./build.sh` as well, or perform the
+steps manually:
+
 ```bash
-cd HaidarApp
-chmod +x build.sh
-./build.sh
+cd app
+wasm-pack build --target web --out-dir www/pkg
+cd www
+npm install
 ```
 
-### Step 3: Start the Development Server
+Then start the dev server:
 
 ```bash
 cd app/www
 npm start
 ```
 
-### Step 4: Open in Browser
+Open <http://localhost:8080>.
 
-Navigate to: http://localhost:8080
+> **Note:** the first build can take 5–15 minutes because Rust compiles all
+> dependencies to WebAssembly. Subsequent builds are much faster.
 
 ## Troubleshooting
 
-### Error: 'cargo' is not recognized
+**`cargo` / `node` / `wasm-pack` not recognized**
+Not installed, or the terminal wasn't restarted after installing. Reinstall and
+open a fresh terminal so `PATH` picks it up.
 
-**Solution:** Rust is not installed or not in PATH
-1. Install Rust from https://www.rust-lang.org/tools/install
-2. Restart your terminal after installation
-3. Verify with: `cargo --version`
+**`wasm-pack build` fails**
+Update Rust (`rustup update`) and make sure the target is installed
+(`rustup target add wasm32-unknown-unknown`).
 
-### Error: 'wasm-pack' is not recognized
+**`npm install` fails**
+Ensure Node.js is installed, clear the cache (`npm cache clean --force`), then
+delete `node_modules` and `package-lock.json` and reinstall.
 
-**Solution:** The build script will install it automatically, or install manually:
-```bash
-cargo install wasm-pack
-```
-
-### Error: 'node' is not recognized
-
-**Solution:** Node.js is not installed
-1. Install from https://nodejs.org/
-2. Restart your terminal
-3. Verify with: `node --version`
-
-### Error: npm install fails
-
-**Solutions:**
-1. Make sure Node.js is installed
-2. Try clearing npm cache: `npm cache clean --force`
-3. Delete `node_modules` folder and `package-lock.json`, then run `npm install` again
-
-### Error: wasm-pack build fails
-
-**Solutions:**
-1. Make sure Rust is up to date: `rustup update`
-2. Install the wasm32 target: `rustup target add wasm32-unknown-unknown`
-3. Try building manually: `cd app && wasm-pack build --target web --out-dir www/pkg`
-
-### Build takes a long time
-
-**This is normal!** The first build can take 5-15 minutes because:
-- Rust needs to compile all dependencies
-- wasm-pack needs to compile to WebAssembly
-- Subsequent builds will be much faster (only changed files are recompiled)
-
-## Manual Build (if scripts don't work)
-
-1. **Install wasm-pack:**
-   ```bash
-   cargo install wasm-pack
-   ```
-
-2. **Build WASM package:**
-   ```bash
-   cd HaidarApp/app
-   wasm-pack build --target web --out-dir www/pkg
-   ```
-
-3. **Install npm dependencies:**
-   ```bash
-   cd www
-   npm install
-   ```
-
-4. **Start server:**
-   ```bash
-   npm start
-   ```
-
-## Need Help?
-
-If you encounter issues:
-1. Make sure all prerequisites are installed
-2. Restart your terminal after installing Rust/Node.js
-3. Check that you're in the correct directory
-4. Try the manual build steps above
-
-
+**`Module not found: Can't resolve 'haidar_app'`**
+The WASM package hasn't been built or `app/www/pkg/` is missing. Run
+`wasm-pack build --target web --out-dir www/pkg` from `app/`. `index.js` imports
+the module by relative path (`./pkg/haidar_app.js`), so `app/www/pkg/` must exist
+and contain `haidar_app.js` and `haidar_app_bg.wasm`.

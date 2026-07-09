@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Rust build output
+target/
+**/*.rs.bk
+
+# wasm-pack / webpack build output
+pkg/
+dist/
+**/www/pkg/
+
+# Generated wasm-bindgen output (build with `wasm-pack build`)
+/haidar_app.js
+/haidar_app.d.ts
+/haidar_app_bg.wasm
+/haidar_app_bg.wasm.d.ts
+HaidarApp/haidar_app.js
+HaidarApp/haidar_app.d.ts
+HaidarApp/haidar_app_bg.wasm
+HaidarApp/haidar_app_bg.wasm.d.ts
+
+# Deployed webpack bundles accidentally emitted at repo root
+/index.html
+/bootstrap.js
+/*.bootstrap.js
+/*.bootstrap.js.LICENSE.txt
+/*.mjs
+/*.mjs.LICENSE.txt
+/*.wasm
+
+# Logs & misc
+*.log
+.DS_Store

@@ -1,6 +1,10 @@
 import init, { ColorImageConverter } from './pkg/haidar_app.js';
 import { removeBackground as rembgRemove } from '@imgly/background-removal';
 import JSZip from 'jszip';
+import { showToast } from './toast.js';
+// Set to true to enable verbose debug logging in the console.
+const DEBUG = false;
+const debugLog = (...args) => { if (DEBUG) console.log(...args); };
 
 // Global state
 let files = [];
@@ -25,10 +29,10 @@ async function initWasm() {
     try {
         await init();
         wasmInitialized = true;
-        console.log('✅ WASM initialized');
+        debugLog('✅ WASM initialized');
     } catch (error) {
         console.error('❌ WASM initialization failed:', error);
-        alert('Failed to initialize WASM module');
+        showToast('Failed to initialize WASM module');
     }
 }
 
@@ -59,12 +63,12 @@ function handleFiles(newFiles) {
     const imageFiles = newFiles.filter(f => f.type.startsWith('image/'));
 
     if (imageFiles.length === 0) {
-        alert('Please select image files');
+        showToast('Please select image files');
         return;
     }
 
     if (imageFiles.length > 50) {
-        alert('Maximum 50 images allowed');
+        showToast('Maximum 50 images allowed');
         return;
     }
 
@@ -137,7 +141,7 @@ processBtn.addEventListener('click', async () => {
 
     } catch (error) {
         console.error('Processing error:', error);
-        alert('Processing failed: ' + error.message);
+        showToast('Processing failed: ' + error.message);
     } finally {
         isProcessing = false;
         processBtn.disabled = false;
@@ -179,12 +183,12 @@ async function processFile(file, index) {
                 throw new Error('SVG is empty or too small');
             }
             jpeg = await svgToJpeg(svg, noBg.width, noBg.height);
-            console.log('✓ SVG to JPEG successful');
+            debugLog('✓ SVG to JPEG successful');
         } catch (svgError) {
             console.warn('⚠ SVG to JPEG failed, using canvas fallback:', svgError.message);
             // Fallback: export canvas directly as JPEG
             jpeg = await canvasToJpeg(vecCanvas || noBg);
-            console.log('✓ Canvas to JPEG fallback successful');
+            debugLog('✓ Canvas to JPEG fallback successful');
         }
 
         // Cleanup temp canvas
@@ -355,8 +359,8 @@ async function vectorize(canvas) {
     // Get SVG content
     const svgContent = tempSvg.outerHTML;
 
-    console.log('Vectorization complete. SVG length:', svgContent.length);
-    console.log('SVG preview:', svgContent.substring(0, 300));
+    debugLog('Vectorization complete. SVG length:', svgContent.length);
+    debugLog('SVG preview:', svgContent.substring(0, 300));
 
     // Keep canvas for fallback, cleanup SVG
     document.body.removeChild(tempSvg);
@@ -502,7 +506,7 @@ downloadBtn.addEventListener('click', async () => {
 
     } catch (error) {
         console.error('ZIP creation error:', error);
-        alert('Failed to create ZIP file');
+        showToast('Failed to create ZIP file');
     } finally {
         downloadBtn.disabled = false;
         downloadBtn.innerHTML = '<span>💾</span><span>Download ZIP</span>';
