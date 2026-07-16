@@ -188,3 +188,12 @@ Built on excellent open-source work:
 
 Dual-licensed under **MIT OR Apache-2.0** — see [`LICENSE-MIT`](LICENSE-MIT) and
 [`LICENSE-APACHE`](LICENSE-APACHE). Third-party dependencies retain their own licenses.
+
+
+---
+
+## 👤 Author
+
+**Built by [Haidar Esber](https://haidaresber.github.io)** — Lebanese software & web developer based in France.
+
+[Portfolio](https://haidaresber.github.io) · [GitHub](https://github.com/HaidarESBER) · [LinkedIn](https://www.linkedin.com/in/haidaresber)
